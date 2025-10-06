@@ -1,23 +1,19 @@
 import { createAI, getMutableAIState, streamUI } from "@ai-sdk/rsc";
 
+import { generateObject } from "ai";
 import "server-only";
 import { z } from "zod";
 
 import { vertex } from "@ai-sdk/google-vertex";
 import { unstable_headers } from "expo-router/rsc/headers";
 import { getPlacesInfo } from "./map/googleapis-maps";
-import { MapCard, MapSkeleton } from "./map/map-card";
+import { MapCard } from "./map/map-card";
 import MarkdownText from "./markdown-text";
 import {
   DestinationCard,
-  DestinationSkeleton,
   type DestinationInfo,
 } from "./travel/destination-card";
-import {
-  ItineraryCard,
-  ItinerarySkeleton,
-  type ItineraryData,
-} from "./travel/itinerary-card";
+import { ItineraryCard, type ItineraryData } from "./travel/itinerary-card";
 
 // Check for required Google Vertex AI credentials
 if (!process.env.GOOGLE_VERTEX_PROJECT) {
@@ -50,13 +46,14 @@ export async function onSubmit(message: string) {
     Array.isArray(currentState?.messages)
   );
 
-  // Ensure messages is always an array
+  // Ensure messages is always an array and currentState is an object
   const currentMessages = Array.isArray(currentState?.messages)
     ? currentState.messages
     : [];
+  const safeCurrentState = currentState || { chatId: nanoid(), messages: [] };
 
   aiState.update({
-    ...currentState,
+    ...safeCurrentState,
     messages: [
       ...currentMessages,
       {
@@ -99,8 +96,8 @@ export async function onSubmit(message: string) {
       generate: async function* (args: { poi: string }) {
         const { poi } = args;
         console.log("[get_points_of_interest] Called with poi:", poi);
-        // Show a spinner on the client while we wait for the response.
-        yield <MapSkeleton />;
+
+        yield <MarkdownText>Searching for places in {poi}...</MarkdownText>;
 
         console.log("[get_points_of_interest] Fetching places info...");
         let pointsOfInterest = await getPlacesInfo(poi);
@@ -117,9 +114,7 @@ export async function onSubmit(message: string) {
   }
 
   const staticTools = ["create_itinerary", "get_destination_info"];
-  const dynamicTools = Array.isArray(Object.keys(tools))
-    ? Object.keys(tools)
-    : [];
+  const dynamicTools = Object.keys(tools);
   const allToolNames = [...dynamicTools, ...staticTools];
 
   console.log(
@@ -143,16 +138,22 @@ Your user is located in: ${headers.get("eas-ip-city") ?? "Paris"}, ${
 CRITICAL: You have access to specialized tools that you MUST use for travel-related requests:
 
 1. create_itinerary - REQUIRED for trip planning requests (e.g., "plan a trip", "create an itinerary", "what should I do in...")
+   - Call this tool when you have: destination name + duration (e.g., "Tokyo for 4 days")
+   - If conversation context provides this info, use it immediately
+   
 2. get_destination_info - REQUIRED for destination information requests (e.g., "tell me about Paris", "best time to visit Rome")${
         process.env.EXPO_OS !== "web"
           ? "\n3. get_points_of_interest - REQUIRED to find real places, restaurants, and attractions"
           : ""
       }
 
-IMPORTANT: 
-- ALWAYS use these tools for travel requests. 
-- NEVER respond with plain text for travel planning or destination queries.
-- If user asks about a trip or destination, you MUST call the appropriate tool.`,
+IMPORTANT RULES: 
+- ALWAYS use these tools for travel requests - they create beautiful interactive cards
+- NEVER respond with plain text for travel planning or destination queries
+- When you have enough information (destination + duration), call create_itinerary immediately
+- If the user provides additional details in follow-up messages (like "4 days" or "3 days"), combine it with previous context to call the tool
+- Look at the conversation history to understand context - if user previously mentioned a destination, use it
+- Do NOT ask for information and then fail to use the tools when the user provides it`,
       messages: (Array.isArray(aiState.get()?.messages)
         ? aiState.get().messages
         : []
@@ -166,6 +167,42 @@ IMPORTANT:
       onFinish: async (event: any) => {
         console.log("[onFinish] ============ STREAM FINISHED ============");
         console.log("[onFinish] Event:", JSON.stringify(event, null, 2));
+
+        // Update AI state with final messages after all tools have completed
+        const currentState = aiState.get();
+        const currentMessages = Array.isArray(currentState?.messages)
+          ? currentState.messages
+          : [];
+        const safeCurrentState = currentState || {
+          chatId: nanoid(),
+          messages: [],
+        };
+
+        try {
+          // Check if there's text content to add
+          const finalText = event.text || "";
+          if (finalText && finalText.trim().length > 0) {
+            aiState.done({
+              ...safeCurrentState,
+              messages: [
+                ...currentMessages,
+                {
+                  id: nanoid(),
+                  role: "assistant" as const,
+                  content: finalText,
+                },
+              ],
+            });
+          } else {
+            // Just mark as done without adding empty message
+            aiState.done(safeCurrentState);
+          }
+        } catch (error) {
+          console.log(
+            "[onFinish] aiState.done() error (likely already closed):",
+            error
+          );
+        }
       },
       onStepFinish: async (event: any) => {
         console.log("[onStepFinish] ============ STEP FINISHED ============");
@@ -177,6 +214,16 @@ IMPORTANT:
         console.log("[onStepFinish] Tool count:", event.toolCalls?.length || 0);
         console.log("[onStepFinish] Text preview:", event.text?.slice(0, 100));
         console.log("[onStepFinish] Event keys:", Object.keys(event));
+
+        // Log error details if finish reason is error
+        if (event.finishReason === "error") {
+          console.log("[onStepFinish] ❌ ERROR OCCURRED:");
+          console.log("[onStepFinish] Error details:", event.error);
+          console.log(
+            "[onStepFinish] Response messages:",
+            event.response?.messages
+          );
+        }
 
         if (event.toolCalls && event.toolCalls.length > 0) {
           console.log("[onStepFinish] ✅ TOOLS WERE CALLED:");
@@ -203,21 +250,8 @@ IMPORTANT:
 
         if (done) {
           console.log("[text] Stream complete, final content:", content);
-          const currentState = aiState.get();
-          const currentMessages = Array.isArray(currentState?.messages)
-            ? currentState.messages
-            : [];
-          aiState.done({
-            ...currentState,
-            messages: [
-              ...currentMessages,
-              {
-                id: nanoid(),
-                role: "assistant" as const,
-                content,
-              },
-            ],
-          });
+          // Don't call aiState.done() here - let onFinish handle it
+          // to avoid closing the stream before tool generators complete
         }
         return <MarkdownText done={done}>{content}</MarkdownText>;
       } as any,
@@ -226,7 +260,7 @@ IMPORTANT:
         ...tools,
         create_itinerary: {
           description:
-            "Creates a detailed day-by-day travel itinerary for any trip planning request. Use this tool when the user asks about planning a trip, creating an itinerary, or wants to know what to do during their visit to a destination.",
+            "Creates a detailed day-by-day travel itinerary for any trip planning request. Use this tool when the user asks about planning a trip, creating an itinerary, or wants to know what to do during their visit to a destination. You only need to provide the destination and duration - the tool will generate the detailed itinerary.",
           inputSchema: z.object({
             destination: z.string().describe("The destination for the trip"),
             duration: z
@@ -262,12 +296,15 @@ IMPORTANT:
                   ),
                 })
               )
-              .describe("Day-by-day itinerary with real places"),
+              .optional()
+              .describe(
+                "Day-by-day itinerary with real places (optional - will be generated if not provided)"
+              ),
           }),
           generate: async function* (args: {
             destination: string;
             duration: string;
-            days: any[];
+            days?: any[];
           }) {
             const { destination, duration, days } = args;
             console.log(
@@ -275,15 +312,93 @@ IMPORTANT:
               destination,
               "duration:",
               duration,
-              "days:",
-              days.length
+              "days provided:",
+              !!days
             );
-            yield <ItinerarySkeleton />;
+
+            yield (
+              <MarkdownText>
+                Creating your {duration} itinerary for {destination}...
+              </MarkdownText>
+            );
+
+            let itineraryDays = days;
+
+            // If days not provided, generate them using AI
+            if (!itineraryDays || itineraryDays.length === 0) {
+              console.log("[create_itinerary] Generating itinerary with AI...");
+
+              // Parse duration to get number of days
+              const durationMatch = duration.match(/(\d+)/);
+              const numDays = durationMatch ? parseInt(durationMatch[1]) : 3;
+
+              try {
+                const result = await generateObject({
+                  model: vertex("gemini-2.5-flash-lite") as any,
+                  schema: z.object({
+                    days: z.array(
+                      z.object({
+                        day: z.number(),
+                        title: z.string(),
+                        activities: z.array(
+                          z.object({
+                            time: z.string(),
+                            activity: z.string(),
+                            location: z.string(),
+                            notes: z.string().optional(),
+                          })
+                        ),
+                      })
+                    ),
+                  }),
+                  prompt: `Create a detailed ${numDays}-day travel itinerary for ${destination}. Include specific real places, attractions, restaurants, and activities. Each day should have 4-6 activities with realistic times. Use actual place names and popular attractions in ${destination}.`,
+                });
+
+                itineraryDays = result.object.days;
+                console.log(
+                  "[create_itinerary] Generated",
+                  itineraryDays.length,
+                  "days"
+                );
+              } catch (error) {
+                console.error(
+                  "[create_itinerary] Error generating itinerary:",
+                  error
+                );
+                // Fallback to simple structure
+                itineraryDays = Array.from({ length: numDays }, (_, i) => ({
+                  day: i + 1,
+                  title: `Day ${i + 1} in ${destination}`,
+                  activities: [
+                    {
+                      time: "9:00 AM",
+                      activity: "Morning Exploration",
+                      location: destination,
+                    },
+                    {
+                      time: "12:00 PM",
+                      activity: "Lunch at Local Restaurant",
+                      location: destination,
+                    },
+                    {
+                      time: "2:00 PM",
+                      activity: "Afternoon Activities",
+                      location: destination,
+                    },
+                    {
+                      time: "7:00 PM",
+                      activity: "Dinner",
+                      location: destination,
+                    },
+                  ],
+                }));
+              }
+            }
 
             const itineraryData: ItineraryData = {
               destination,
               duration,
-              days,
+              days: itineraryDays,
             };
 
             console.log("[create_itinerary] Returning itinerary card");
@@ -343,7 +458,10 @@ IMPORTANT:
               "highlights:",
               highlights?.length || 0
             );
-            yield <DestinationSkeleton />;
+
+            yield (
+              <MarkdownText>Getting information about {name}...</MarkdownText>
+            );
 
             const destinationData: DestinationInfo = {
               name,

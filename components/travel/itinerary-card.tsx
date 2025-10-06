@@ -1,5 +1,7 @@
+import { Card } from "@/components/card";
+import Skeleton from "@/components/ui/Skeleton";
+import React from "react";
 import { ScrollView, Text, View } from "react-native";
-import { tw } from "../../util/tw";
 
 export interface ItineraryDay {
   day: number;
@@ -19,88 +21,139 @@ export interface ItineraryData {
 }
 
 interface ItineraryCardProps {
-  data?: ItineraryData;
+  data: ItineraryData;
   title?: string;
 }
 
 export function ItinerarySkeleton() {
-  console.log("[ItinerarySkeleton] Rendering");
   return (
-    <View style={tw`bg-gray-100 dark:bg-gray-800 rounded-2xl p-6 my-4`}>
-      <View style={tw`bg-gray-300 dark:bg-gray-700 h-6 w-3/4 rounded mb-4`} />
-      <View style={tw`bg-gray-300 dark:bg-gray-700 h-4 w-1/2 rounded mb-6`} />
-      <View style={tw`space-y-3`}>
-        {[1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={tw`bg-gray-200 dark:bg-gray-700 h-20 rounded-xl`}
-          />
-        ))}
+    <Card
+      title="Creating itinerary..."
+      style={{
+        padding: 0,
+        pointerEvents: "none",
+      }}
+    >
+      <View style={{ padding: 24, gap: 16 }}>
+        <Skeleton
+          dark={false}
+          style={{ width: "75%", height: 24, borderRadius: 8 }}
+        />
+        <Skeleton
+          dark={false}
+          style={{ width: "50%", height: 16, borderRadius: 8 }}
+        />
+        <View style={{ gap: 12, marginTop: 8 }}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton
+              key={i}
+              dark={false}
+              style={{ width: "100%", height: 80, borderRadius: 12 }}
+            />
+          ))}
+        </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
-export function ItineraryCard({ data, title }: ItineraryCardProps) {
-  console.log("[ItineraryCard] Rendering with data:", data);
-  if (!data) {
-    return <ItinerarySkeleton />;
-  }
-
+export function ItineraryCard({
+  data,
+  title = "Your Travel Itinerary",
+}: ItineraryCardProps) {
   return (
-    <View style={tw`bg-white dark:bg-gray-800 rounded-2xl p-6 my-4 shadow-lg`}>
-      {title && (
-        <Text style={tw`text-xl font-bold text-gray-900 dark:text-white mb-2`}>
-          {title}
+    <Card title={title} style={{ padding: 0 }}>
+      <View style={{ padding: 24 }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "bold",
+            color: "#2563eb",
+            marginBottom: 4,
+          }}
+        >
+          {data.destination}
         </Text>
-      )}
-      <Text
-        style={tw`text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1`}
-      >
-        {data.destination}
-      </Text>
-      <Text style={tw`text-sm text-gray-600 dark:text-gray-400 mb-6`}>
-        {data.duration}
-      </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: "#4b5563",
+            marginBottom: 24,
+          }}
+        >
+          {data.duration}
+        </Text>
 
-      <ScrollView style={tw`max-h-96`}>
-        {data.days.map((day) => (
-          <View key={day.day} style={tw`mb-6`}>
-            <Text
-              style={tw`text-lg font-semibold text-gray-900 dark:text-white mb-3`}
-            >
-              Day {day.day}: {day.title}
-            </Text>
-            {day.activities.map((activity, idx) => (
-              <View
-                key={idx}
-                style={tw`mb-4 ml-4 border-l-2 border-blue-500 pl-4`}
+        <ScrollView style={{ maxHeight: 384 }}>
+          {data.days.map((day) => (
+            <View key={day.day} style={{ marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "600",
+                  color: "#111827",
+                  marginBottom: 12,
+                }}
               >
-                <Text
-                  style={tw`text-sm font-medium text-blue-600 dark:text-blue-400`}
+                Day {day.day}: {day.title}
+              </Text>
+              {day.activities.map((activity, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    marginBottom: 16,
+                    marginLeft: 16,
+                    borderLeftWidth: 2,
+                    borderLeftColor: "#3b82f6",
+                    paddingLeft: 16,
+                  }}
                 >
-                  {activity.time}
-                </Text>
-                <Text
-                  style={tw`text-base font-semibold text-gray-900 dark:text-white mt-1`}
-                >
-                  {activity.activity}
-                </Text>
-                <Text style={tw`text-sm text-gray-600 dark:text-gray-400 mt-1`}>
-                  📍 {activity.location}
-                </Text>
-                {activity.notes && (
                   <Text
-                    style={tw`text-sm text-gray-500 dark:text-gray-500 mt-1 italic`}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "500",
+                      color: "#2563eb",
+                    }}
                   >
-                    {activity.notes}
+                    {activity.time}
                   </Text>
-                )}
-              </View>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
-    </View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "600",
+                      color: "#111827",
+                      marginTop: 4,
+                    }}
+                  >
+                    {activity.activity}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#4b5563",
+                      marginTop: 4,
+                    }}
+                  >
+                    📍 {activity.location}
+                  </Text>
+                  {activity.notes && (
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: "#6b7280",
+                        marginTop: 4,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {activity.notes}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </Card>
   );
 }

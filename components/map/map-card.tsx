@@ -1,18 +1,30 @@
+import { Card } from "@/components/card";
+import Skeleton from "@/components/ui/Skeleton";
 import { View } from "react-native";
-import { Card } from "../card";
-import Skeleton from "../ui/Skeleton";
 import { FlyoverCard } from "./flyover-map-spots";
 import { PointOfInterestData } from "./googleapis-maps";
 
 export function MapSkeleton() {
   return (
-    <Card title="Searching area..." fillSpace={process.env.EXPO_OS !== "web"}>
-      <View style={{ borderRadius: 10, height: 240 }} />
-      <Skeleton
-        dark={false}
-        style={{ borderRadius: 10, height: 96 }}
-        delay={200}
-      />
+    <Card
+      title="Searching area..."
+      fillSpace={process.env.EXPO_OS !== "web"}
+      style={{
+        padding: 0,
+        pointerEvents: "none",
+      }}
+    >
+      <View style={{ padding: 8, gap: 8 }}>
+        <Skeleton
+          dark={false}
+          style={{ borderRadius: 10, height: 240, width: "100%" }}
+        />
+        <Skeleton
+          dark={false}
+          style={{ borderRadius: 10, height: 96, width: "100%" }}
+          delay={200}
+        />
+      </View>
     </Card>
   );
 }
@@ -35,17 +47,14 @@ export function MapCard({
           .sort((a, b) => {
             return b.user_ratings_total - a.user_ratings_total;
           })
-
           .map((point) => ({
             icon: point.icon,
             rating: point.rating,
-            // photo: point.photos?.[0]?.photo_reference,
             title: point.name,
             latitude: point.geometry.location.lat,
             longitude: point.geometry.location.lng,
-            // Address
             address: point.formatted_address,
-            isOpen: point.opening_hours?.open_now,
+            isOpen: point.opening_hours?.open_now ?? false,
             userRatingsTotal: point.user_ratings_total,
             userRating: point.rating,
           }))}

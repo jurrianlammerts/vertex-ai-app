@@ -1,5 +1,7 @@
+import { Card } from "@/components/card";
+import Skeleton from "@/components/ui/Skeleton";
+import React from "react";
 import { ScrollView, Text, View } from "react-native";
-import { tw } from "../../util/tw";
 
 export interface DestinationInfo {
   name: string;
@@ -10,94 +12,150 @@ export interface DestinationInfo {
 }
 
 interface DestinationCardProps {
-  data?: DestinationInfo;
+  data: DestinationInfo;
+  title?: string;
 }
 
 export function DestinationSkeleton() {
-  console.log("[DestinationSkeleton] Rendering");
   return (
-    <View style={tw`bg-gray-100 dark:bg-gray-800 rounded-2xl p-6 my-4`}>
-      <View style={tw`bg-gray-300 dark:bg-gray-700 h-6 w-3/4 rounded mb-4`} />
-      <View style={tw`bg-gray-300 dark:bg-gray-700 h-20 w-full rounded mb-4`} />
-      <View style={tw`space-y-2`}>
-        {[1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={tw`bg-gray-200 dark:bg-gray-700 h-4 w-full rounded`}
-          />
-        ))}
+    <Card
+      title="Loading destination..."
+      style={{ padding: 0, pointerEvents: "none" }}
+    >
+      <View style={{ padding: 24, gap: 16 }}>
+        <Skeleton
+          dark={false}
+          style={{ width: "75%", height: 24, borderRadius: 8 }}
+        />
+        <Skeleton
+          dark={false}
+          style={{ width: "100%", height: 80, borderRadius: 8 }}
+        />
+        <View style={{ gap: 8 }}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton
+              key={i}
+              dark={false}
+              style={{ width: "100%", height: 16, borderRadius: 8 }}
+            />
+          ))}
+        </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
-export function DestinationCard({ data }: DestinationCardProps) {
-  console.log("[DestinationCard] Rendering with data:", data);
-  if (!data) {
-    return <DestinationSkeleton />;
-  }
-
+export function DestinationCard({
+  data,
+  title = "Destination Information",
+}: DestinationCardProps) {
   return (
-    <View style={tw`bg-white dark:bg-gray-800 rounded-2xl p-6 my-4 shadow-lg`}>
-      <Text
-        style={tw`text-2xl font-bold text-blue-600 dark:text-blue-400 mb-3`}
-      >
-        {data.name}
-      </Text>
+    <Card title={title} style={{ padding: 0 }}>
+      <View style={{ padding: 24, gap: 16 }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "bold",
+            color: "#2563eb",
+          }}
+        >
+          {data.name}
+        </Text>
 
-      <Text
-        style={tw`text-base text-gray-700 dark:text-gray-300 mb-4 leading-6`}
-      >
-        {data.description}
-      </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: "#374151",
+            lineHeight: 24,
+          }}
+        >
+          {data.description}
+        </Text>
 
-      {data.bestTimeToVisit && (
-        <View style={tw`mb-4`}>
-          <Text
-            style={tw`text-sm font-semibold text-gray-900 dark:text-white mb-1`}
-          >
-            🌤️ Best Time to Visit
-          </Text>
-          <Text style={tw`text-sm text-gray-600 dark:text-gray-400`}>
-            {data.bestTimeToVisit}
-          </Text>
-        </View>
-      )}
+        {data.bestTimeToVisit && (
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: 4,
+              }}
+            >
+              🌤️ Best Time to Visit
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#4b5563",
+              }}
+            >
+              {data.bestTimeToVisit}
+            </Text>
+          </View>
+        )}
 
-      {data.estimatedBudget && (
-        <View style={tw`mb-4`}>
-          <Text
-            style={tw`text-sm font-semibold text-gray-900 dark:text-white mb-1`}
-          >
-            💰 Estimated Budget
-          </Text>
-          <Text style={tw`text-sm text-gray-600 dark:text-gray-400`}>
-            {data.estimatedBudget}
-          </Text>
-        </View>
-      )}
+        {data.estimatedBudget && (
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: 4,
+              }}
+            >
+              💰 Estimated Budget
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#4b5563",
+              }}
+            >
+              {data.estimatedBudget}
+            </Text>
+          </View>
+        )}
 
-      {data.highlights.length > 0 && (
-        <View>
-          <Text
-            style={tw`text-sm font-semibold text-gray-900 dark:text-white mb-2`}
-          >
-            ✨ Highlights
-          </Text>
-          <ScrollView style={tw`max-h-48`}>
-            {data.highlights.map((highlight, idx) => (
-              <View key={idx} style={tw`flex-row items-start mb-2`}>
-                <Text style={tw`text-blue-500 mr-2`}>•</Text>
-                <Text
-                  style={tw`flex-1 text-sm text-gray-700 dark:text-gray-300`}
+        {data.highlights.length > 0 && (
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: 8,
+              }}
+            >
+              ✨ Highlights
+            </Text>
+            <ScrollView style={{ maxHeight: 192 }}>
+              {data.highlights.map((highlight, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    marginBottom: 8,
+                  }}
                 >
-                  {highlight}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
+                  <Text style={{ color: "#3b82f6", marginRight: 8 }}>•</Text>
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 14,
+                      color: "#374151",
+                    }}
+                  >
+                    {highlight}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+    </Card>
   );
 }
