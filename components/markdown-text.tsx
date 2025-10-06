@@ -7,9 +7,10 @@ import Markdown from "react-native-markdown-display";
 
 export default function MarkdownText({
   done,
+  children,
   ...props
 }: React.ComponentProps<typeof Markdown> & { done?: boolean }) {
-  const content = props.children?.toString() || "";
+  const content = children?.toString() || "";
   console.log(
     "[MarkdownText] Rendering, done:",
     done,
@@ -64,7 +65,9 @@ export default function MarkdownText({
           },
         }}
         {...props}
-      />
+      >
+        {content}
+      </Markdown>
       {/* TODO: Add a toolbar to the end of the text message when it's complete. */}
     </>
   );
