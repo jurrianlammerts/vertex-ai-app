@@ -83,13 +83,19 @@ export function ChatToolbarInner({
       });
 
       console.log("[ChatToolbar] Adding user message:", value);
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        {
-          id: nanoid(),
-          display: <UserMessage>{value}</UserMessage>,
-        },
-      ]);
+      setMessages((currentMessages) => {
+        // Ensure currentMessages is an array
+        const messagesArray = Array.isArray(currentMessages)
+          ? currentMessages
+          : [];
+        return [
+          ...messagesArray,
+          {
+            id: nanoid(),
+            display: <UserMessage>{value}</UserMessage>,
+          },
+        ];
+      });
 
       console.log("[ChatToolbar] Calling onSubmit with:", value);
       onSubmit(value)
@@ -103,6 +109,10 @@ export function ChatToolbarInner({
             !!responseDisplay &&
               typeof responseDisplay === "object" &&
               "$$typeof" in responseDisplay
+          );
+          console.log(
+            "[ChatToolbar] Response value:",
+            JSON.stringify(responseDisplay, null, 2).substring(0, 300)
           );
 
           // Don't add null or undefined responses
@@ -123,11 +133,15 @@ export function ChatToolbarInner({
           });
 
           setMessages((currentMessages) => {
+            // Ensure currentMessages is an array
+            const messagesArray = Array.isArray(currentMessages)
+              ? currentMessages
+              : [];
             console.log(
               "[ChatToolbar] Adding response to messages, current count:",
-              currentMessages.length
+              messagesArray.length
             );
-            const newMessages = [...currentMessages, responseMessage];
+            const newMessages = [...messagesArray, responseMessage];
             console.log("[ChatToolbar] New message count:", newMessages.length);
             return newMessages;
           });

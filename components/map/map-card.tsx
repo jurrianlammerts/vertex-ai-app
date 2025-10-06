@@ -36,6 +36,7 @@ export function MapCard({
   city: string;
   data: PointOfInterestData[];
 }) {
+  console.log("MapCard: ", data);
   return (
     <Card
       fillSpace={process.env.EXPO_OS !== "web"}

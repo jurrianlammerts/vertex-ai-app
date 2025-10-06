@@ -61,6 +61,7 @@ export function ItineraryCard({
   data,
   title = "Your Travel Itinerary",
 }: ItineraryCardProps) {
+  console.log("ItineraryCard: ", data);
   return (
     <Card title={title} style={{ padding: 0 }}>
       <View style={{ padding: 24 }}>

@@ -1,6 +1,7 @@
+import { nanoid } from "@/util/nanoid";
 import { createAI, getMutableAIState, streamUI } from "@ai-sdk/rsc";
 
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import "server-only";
 import { z } from "zod";
 
@@ -138,8 +139,10 @@ Your user is located in: ${headers.get("eas-ip-city") ?? "Paris"}, ${
 CRITICAL: You have access to specialized tools that you MUST use for travel-related requests:
 
 1. create_itinerary - REQUIRED for trip planning requests (e.g., "plan a trip", "create an itinerary", "what should I do in...")
-   - Call this tool when you have: destination name + duration (e.g., "Tokyo for 4 days")
-   - If conversation context provides this info, use it immediately
+   - Call this tool when you have a destination name
+   - If duration is not specified, assume "3 days" as the default
+   - NEVER ask for the duration - just use a reasonable default (3 days for cities, 5-7 days for countries)
+   - Examples: "Tokyo" → use "3 days", "Italy" → use "7 days"
    
 2. get_destination_info - REQUIRED for destination information requests (e.g., "tell me about Paris", "best time to visit Rome")${
         process.env.EXPO_OS !== "web"
@@ -150,10 +153,10 @@ CRITICAL: You have access to specialized tools that you MUST use for travel-rela
 IMPORTANT RULES: 
 - ALWAYS use these tools for travel requests - they create beautiful interactive cards
 - NEVER respond with plain text for travel planning or destination queries
-- When you have enough information (destination + duration), call create_itinerary immediately
-- If the user provides additional details in follow-up messages (like "4 days" or "3 days"), combine it with previous context to call the tool
+- NEVER ask follow-up questions about duration - just use sensible defaults
+- If the user says "create an itinerary for Tokyo" or "plan a trip to Tokyo", immediately call create_itinerary with destination="Tokyo" and duration="3 days"
 - Look at the conversation history to understand context - if user previously mentioned a destination, use it
-- Do NOT ask for information and then fail to use the tools when the user provides it`,
+- Be proactive and use tools immediately, don't ask clarifying questions`,
       messages: (Array.isArray(aiState.get()?.messages)
         ? aiState.get().messages
         : []
@@ -260,60 +263,23 @@ IMPORTANT RULES:
         ...tools,
         create_itinerary: {
           description:
-            "Creates a detailed day-by-day travel itinerary for any trip planning request. Use this tool when the user asks about planning a trip, creating an itinerary, or wants to know what to do during their visit to a destination. You only need to provide the destination and duration - the tool will generate the detailed itinerary.",
+            "Creates a detailed day-by-day travel itinerary for any trip planning request. Use this tool when the user asks about planning a trip, creating an itinerary, or wants to know what to do during their visit to a destination.",
           inputSchema: z.object({
             destination: z.string().describe("The destination for the trip"),
             duration: z
               .string()
               .describe("Duration of the trip (e.g., '5 days', '1 week')"),
-            days: z
-              .array(
-                z.object({
-                  day: z.number().describe("Day number"),
-                  title: z.string().describe("Title/theme for the day"),
-                  activities: z.array(
-                    z.object({
-                      time: z
-                        .string()
-                        .describe("Time of activity (e.g., '9:00 AM')"),
-                      activity: z
-                        .string()
-                        .describe(
-                          "Activity name - use real place names when possible"
-                        ),
-                      location: z
-                        .string()
-                        .describe(
-                          "Specific location/venue with real place name (e.g., 'Eiffel Tower', 'Le Jules Verne Restaurant')"
-                        ),
-                      notes: z
-                        .string()
-                        .optional()
-                        .describe(
-                          "Additional notes, tips, or booking information"
-                        ),
-                    })
-                  ),
-                })
-              )
-              .optional()
-              .describe(
-                "Day-by-day itinerary with real places (optional - will be generated if not provided)"
-              ),
           }),
           generate: async function* (args: {
             destination: string;
             duration: string;
-            days?: any[];
           }) {
-            const { destination, duration, days } = args;
+            const { destination, duration } = args;
             console.log(
               "[create_itinerary] Called with destination:",
               destination,
               "duration:",
-              duration,
-              "days provided:",
-              !!days
+              duration
             );
 
             yield (
@@ -322,86 +288,98 @@ IMPORTANT RULES:
               </MarkdownText>
             );
 
-            let itineraryDays = days;
+            // Parse duration to get number of days
+            const durationMatch = duration.match(/(\d+)/);
+            const numDays = durationMatch ? parseInt(durationMatch[1]) : 3;
 
-            // If days not provided, generate them using AI
-            if (!itineraryDays || itineraryDays.length === 0) {
-              console.log("[create_itinerary] Generating itinerary with AI...");
+            console.log("[create_itinerary] Generating AI itinerary...");
 
-              // Parse duration to get number of days
-              const durationMatch = duration.match(/(\d+)/);
-              const numDays = durationMatch ? parseInt(durationMatch[1]) : 3;
+            // Use AI to generate the itinerary content
+            let aiItinerary;
+            try {
+              const result = (await generateText({
+                // @ts-ignore
+                model: vertex("gemini-2.5-flash-lite"),
+                prompt: `Create a detailed ${numDays}-day travel itinerary for ${destination}. 
 
-              try {
-                const result = await generateObject({
-                  model: vertex("gemini-2.5-flash-lite") as any,
-                  schema: z.object({
-                    days: z.array(
-                      z.object({
-                        day: z.number(),
-                        title: z.string(),
-                        activities: z.array(
-                          z.object({
-                            time: z.string(),
-                            activity: z.string(),
-                            location: z.string(),
-                            notes: z.string().optional(),
-                          })
-                        ),
-                      })
-                    ),
-                  }),
-                  prompt: `Create a detailed ${numDays}-day travel itinerary for ${destination}. Include specific real places, attractions, restaurants, and activities. Each day should have 4-6 activities with realistic times. Use actual place names and popular attractions in ${destination}.`,
-                });
+Format your response as a JSON array where each day has:
+- day: number (1, 2, 3, etc.)
+- title: string (theme for the day, e.g., "Historic Downtown" or "Cultural Exploration")
+- activities: array of 4-6 activities, each with:
+  - time: string (e.g., "9:00 AM")
+  - activity: string (name of activity)
+  - location: string (specific place name, use REAL landmarks and venues)
+  - notes: string (helpful tips or booking info)
 
-                itineraryDays = result.object.days;
+Use real, popular attractions, restaurants, and venues in ${destination}. Make it practical and exciting.
+
+Return ONLY the JSON array, no other text.`,
+              })) as any;
+
+              console.log(
+                "[create_itinerary] AI response:",
+                result.text.substring(0, 200)
+              );
+
+              // Parse the AI response
+              const jsonMatch = result.text.match(/\[[\s\S]*\]/);
+              if (jsonMatch) {
+                aiItinerary = JSON.parse(jsonMatch[0]);
                 console.log(
-                  "[create_itinerary] Generated",
-                  itineraryDays.length,
-                  "days"
+                  "[create_itinerary] Successfully parsed AI itinerary"
                 );
-              } catch (error) {
-                console.error(
-                  "[create_itinerary] Error generating itinerary:",
-                  error
-                );
-                // Fallback to simple structure
-                itineraryDays = Array.from({ length: numDays }, (_, i) => ({
-                  day: i + 1,
-                  title: `Day ${i + 1} in ${destination}`,
-                  activities: [
-                    {
-                      time: "9:00 AM",
-                      activity: "Morning Exploration",
-                      location: destination,
-                    },
-                    {
-                      time: "12:00 PM",
-                      activity: "Lunch at Local Restaurant",
-                      location: destination,
-                    },
-                    {
-                      time: "2:00 PM",
-                      activity: "Afternoon Activities",
-                      location: destination,
-                    },
-                    {
-                      time: "7:00 PM",
-                      activity: "Dinner",
-                      location: destination,
-                    },
-                  ],
-                }));
+              } else {
+                throw new Error("Could not parse AI response");
               }
+            } catch (error) {
+              console.error(
+                "[create_itinerary] Error generating AI itinerary:",
+                error
+              );
+              // Fallback to basic structure
+              aiItinerary = Array.from({ length: numDays }, (_, i) => ({
+                day: i + 1,
+                title: `Day ${i + 1} in ${destination}`,
+                activities: [
+                  {
+                    time: "9:00 AM",
+                    activity: "Morning Exploration",
+                    location: `${destination} City Center`,
+                    notes: "Start your day exploring the main attractions",
+                  },
+                  {
+                    time: "12:00 PM",
+                    activity: "Lunch",
+                    location: `Local Restaurant in ${destination}`,
+                    notes: "Try local cuisine",
+                  },
+                  {
+                    time: "2:00 PM",
+                    activity: "Afternoon Activities",
+                    location: `Popular Areas in ${destination}`,
+                    notes: "Visit museums, parks, or shopping districts",
+                  },
+                  {
+                    time: "6:00 PM",
+                    activity: "Evening Experience",
+                    location: `${destination} Entertainment District`,
+                    notes: "Enjoy local nightlife and dining",
+                  },
+                ],
+              }));
             }
 
             const itineraryData: ItineraryData = {
               destination,
               duration,
-              days: itineraryDays,
+              days: aiItinerary,
             };
 
-            console.log("[create_itinerary] Returning itinerary card");
+            console.log(
+              "[create_itinerary] Returning itinerary card with",
+              aiItinerary.length,
+              "days"
+            );
             return (
               <ItineraryCard
                 data={itineraryData}
@@ -501,8 +479,6 @@ IMPORTANT RULES:
   );
   return finalValue;
 }
-
-const nanoid = () => Math.random().toString(36).slice(2);
 
 export type Message = {
   id: string;

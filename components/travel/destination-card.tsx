@@ -49,6 +49,7 @@ export function DestinationCard({
   data,
   title = "Destination Information",
 }: DestinationCardProps) {
+  console.log("DestinationCard: ", data);
   return (
     <Card title={title} style={{ padding: 0 }}>
       <View style={{ padding: 24, gap: 16 }}>
