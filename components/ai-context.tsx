@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { vertex } from "@ai-sdk/google-vertex";
 import { unstable_headers } from "expo-router/rsc/headers";
+import { View } from "react-native";
 import { getPlacesInfo } from "./map/googleapis-maps";
 import { MapCard } from "./map/map-card";
 import MarkdownText from "./markdown-text";
@@ -15,6 +16,7 @@ import {
   type DestinationInfo,
 } from "./travel/destination-card";
 import { ItineraryCard, type ItineraryData } from "./travel/itinerary-card";
+import { PlacesListCard } from "./travel/itinerary-client-components";
 
 // Check for required Google Vertex AI credentials
 if (!process.env.GOOGLE_VERTEX_PROJECT) {
@@ -108,8 +110,29 @@ export async function onSubmit(message: string) {
           "places"
         );
 
-        // Return the points of interest card to the client.
-        return <MapCard city={poi} data={pointsOfInterest} />;
+        // Map Google data to RoutePlace[]
+        const places = (pointsOfInterest || []).map((p) => ({
+          place_id: p.place_id,
+          name: { text: p.name },
+          type: { text: p.types?.[0] ?? "place" },
+          address: p.formatted_address,
+          formattedAddress: p.formatted_address,
+          latitude: p.geometry.location.lat,
+          longitude: p.geometry.location.lng,
+          photo: p.photos?.[0]?.photo_reference
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${p.photos[0].photo_reference}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+            : undefined,
+          country: undefined,
+          websiteUri: undefined,
+        }));
+
+        // Return both map and list for better UX
+        return (
+          <View style={{ gap: 16 }}>
+            <MapCard city={poi} data={pointsOfInterest} />
+            <PlacesListCard title="Places" places={places} />
+          </View>
+        );
       },
     };
   }

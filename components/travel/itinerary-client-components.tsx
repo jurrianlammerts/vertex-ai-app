@@ -1,61 +1,90 @@
 "use client";
 
-import * as Haptics from "expo-haptics";
+import { Card } from "@/components/card";
 import React from "react";
-import { TouchableOpacity, ViewStyle } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-export function ActivityTouchable({
-  activity,
-  children,
-  style,
-  onPress,
+// Minimal local type to match user's RoutePlace for UI usage
+type DisplayName = { text: string };
+export type RoutePlace = {
+  id?: number;
+  record_id?: number;
+  route_id?: number;
+  displayName?: DisplayName;
+  primaryTypeDisplayName?: DisplayName;
+  formattedAddress?: string;
+  place_id?: string;
+  name?: DisplayName;
+  type?: DisplayName;
+  address?: string;
+  day_number?: number | null;
+  position_in_day?: number;
+  photo?: string;
+  country?: string;
+  latitude: string | number;
+  longitude: string | number;
+  websiteUri?: string;
+};
+
+export function PlacesListCard({
+  title = "Places",
+  places,
 }: {
-  activity: { time: string; activity: string; location: string };
-  children: React.ReactNode;
-  style?: ViewStyle;
-  onPress?: () => void;
+  title?: string;
+  places: RoutePlace[];
 }) {
   return (
-    <TouchableOpacity
-      delayLongPress={1000}
-      style={style}
-      activeOpacity={0.8}
-      onPress={() => {
-        if (process.env.EXPO_OS !== "web") {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        onPress?.();
-      }}
-    >
-      {children}
-    </TouchableOpacity>
+    <Card title={title} style={{ padding: 0 }}>
+      <View style={styles.container}>
+        {places.map((p, idx) => (
+          <View key={`${p.place_id ?? idx}`} style={styles.itemRow}>
+            <View style={styles.thumb} />
+            <View style={styles.texts}>
+              <Text
+                style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}
+                numberOfLines={1}
+              >
+                {p?.name?.text ?? p?.displayName?.text ?? "Unknown"}
+              </Text>
+              <Text
+                style={{ fontSize: 14, color: "#6b7280" }}
+                numberOfLines={1}
+              >
+                {p?.type?.text ?? p?.primaryTypeDisplayName?.text ?? "Place"}
+              </Text>
+              <Text
+                style={{ fontSize: 13, color: "#9ca3af" }}
+                numberOfLines={1}
+              >
+                {p?.address ??
+                  p?.formattedAddress ??
+                  `${p.latitude}, ${p.longitude}`}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </Card>
   );
 }
 
-export function DayTouchable({
-  day,
-  children,
-  style,
-  onPress,
-}: {
-  day: { day: number; title: string };
-  children: React.ReactNode;
-  style?: ViewStyle;
-  onPress?: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      delayLongPress={1000}
-      style={style}
-      activeOpacity={0.8}
-      onPress={() => {
-        if (process.env.EXPO_OS !== "web") {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        onPress?.();
-      }}
-    >
-      {children}
-    </TouchableOpacity>
-  );
-}
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    gap: 12,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  thumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: "#e5e7eb",
+  },
+  texts: {
+    flex: 1,
+  },
+});

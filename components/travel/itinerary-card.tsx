@@ -59,7 +59,7 @@ export function ItinerarySkeleton() {
 
 export function ItineraryCard({
   data,
-  title = "Your Travel Itinerary",
+  title = "Your Route",
 }: ItineraryCardProps) {
   console.log("ItineraryCard: ", data);
   return (
@@ -96,7 +96,7 @@ export function ItineraryCard({
                   marginBottom: 12,
                 }}
               >
-                Day {day.day}: {day.title}
+                {day.title}
               </Text>
               {day.activities.map((activity, idx) => (
                 <View
