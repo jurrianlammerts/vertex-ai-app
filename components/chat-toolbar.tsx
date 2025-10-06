@@ -2,8 +2,8 @@
 
 import { nanoid } from "@/util/nanoid";
 import { tw } from "@/util/tw";
-import * as AC from "@bacons/apple-colors"; 
 import { useActions, useUIState } from "@ai-sdk/rsc";
+import * as AC from "@bacons/apple-colors";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import React, { useCallback, useRef, useState } from "react";
@@ -82,6 +82,7 @@ export function ChatToolbarInner({
         textInput.current?.clear();
       });
 
+      console.log("[ChatToolbar] Adding user message:", value);
       setMessages((currentMessages) => [
         ...currentMessages,
         {
@@ -90,9 +91,52 @@ export function ChatToolbarInner({
         },
       ]);
 
-      onSubmit(value).then((responseMessage) => {
-        setMessages((currentMessages) => [...currentMessages, responseMessage]);
-      });
+      console.log("[ChatToolbar] Calling onSubmit with:", value);
+      onSubmit(value)
+        .then((responseDisplay) => {
+          console.log(
+            "[ChatToolbar] Got response, type:",
+            typeof responseDisplay
+          );
+          console.log(
+            "[ChatToolbar] Response is React element:",
+            !!responseDisplay &&
+              typeof responseDisplay === "object" &&
+              "$$typeof" in responseDisplay
+          );
+
+          // Don't add null or undefined responses
+          if (!responseDisplay) {
+            console.log("[ChatToolbar] Skipping null/undefined response");
+            return;
+          }
+
+          const responseMessage: { id: string; display: React.ReactNode } = {
+            id: nanoid(),
+            display: responseDisplay as React.ReactNode,
+          };
+
+          console.log("[ChatToolbar] Created response message:", {
+            id: responseMessage.id,
+            hasDisplay: !!responseMessage.display,
+            displayType: typeof responseMessage.display,
+          });
+
+          setMessages((currentMessages) => {
+            console.log(
+              "[ChatToolbar] Adding response to messages, current count:",
+              currentMessages.length
+            );
+            const newMessages = [...currentMessages, responseMessage];
+            console.log("[ChatToolbar] New message count:", newMessages.length);
+            return newMessages;
+          });
+          console.log("[ChatToolbar] Response added to messages");
+        })
+        .catch((error) => {
+          console.error("[ChatToolbar] Error calling onSubmit:", error);
+          // The error is already handled in ai-context.tsx, so we don't need to do anything here
+        });
 
       setInputValue("");
     },

@@ -20,12 +20,13 @@ export default function Layout() {
     <ThemeProvider>
       <Stack
         screenOptions={{
-          title: "Expo AI",
+          title: "Travel AI",
         }}
       >
         <Stack.Screen
           name="index"
           options={{
+            // @ts-expect-error
             headerLargeStyle: {
               backgroundColor: AC.systemGroupedBackground,
             },
@@ -59,6 +60,7 @@ export default function Layout() {
           options={{
             headerTransparent: false,
 
+            // @ts-expect-error
             headerLargeStyle: {
               backgroundColor: AC.systemGroupedBackground,
             },
@@ -81,11 +83,23 @@ export default function Layout() {
             headerTransparent: true,
             presentation: "formSheet",
             headerRight: () => (
-              <Form.Link headerRight href="/" dismissTo>
+              <Form.Link
+                headerRight
+                href="/"
+                dismissTo
+                style={[
+                  {
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: 2,
+                    width: 32,
+                    height: 32,
+                  },
+                ]}
+              >
                 <IconSymbol
                   name="arrow.down.circle.fill"
                   color={AC.systemGray}
-                  size={28}
                 />
               </Form.Link>
             ),

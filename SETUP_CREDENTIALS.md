@@ -11,6 +11,8 @@ GOOGLE_VERTEX_PROJECT=your-project-id
 GOOGLE_VERTEX_LOCATION=us-central1
 GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json
 GOOGLE_PLACES_API_KEY=your-api-key-here
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-api-key-here
+EXPO_PUBLIC_GOOGLE_MAP_ID=your-map-id-here
 ```
 
 ## Step-by-Step Setup
@@ -34,6 +36,10 @@ Enable these APIs in your project:
    - Go to [Places API](https://console.cloud.google.com/apis/library/places-backend.googleapis.com)
    - Click "Enable"
 
+3. **Maps JavaScript API** (for web map display):
+   - Go to [Maps JavaScript API](https://console.cloud.google.com/apis/library/maps-backend.googleapis.com)
+   - Click "Enable"
+
 ### 3. Create a Service Account
 
 1. Go to [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
@@ -54,15 +60,35 @@ Enable these APIs in your project:
 6. Click "Create"
 7. **Save the downloaded file as `google-credentials.json` in your project root**
 
-### 5. Get Google Places API Key (Optional - for map features)
+### 5. Get Google API Keys (Required for map features)
 
+#### Create API Key for Places API:
 1. Go to [Credentials](https://console.cloud.google.com/apis/credentials)
 2. Click "Create Credentials" → "API Key"
-3. Copy the API key
+3. Copy the API key (this is for `GOOGLE_PLACES_API_KEY`)
 4. (Recommended) Click "Restrict Key":
    - Under "API restrictions", select "Restrict key"
    - Select "Places API"
    - Click "Save"
+
+#### Create API Key for Maps JavaScript API (Web):
+1. Go to [Credentials](https://console.cloud.google.com/apis/credentials)
+2. Click "Create Credentials" → "API Key"
+3. Copy the API key (this is for `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`)
+4. (Recommended) Click "Restrict Key":
+   - Under "API restrictions", select "Restrict key"
+   - Select "Maps JavaScript API"
+   - Under "Application restrictions", select "HTTP referrers"
+   - Add your development and production domains (e.g., `localhost:*`, `yourdomain.com/*`)
+   - Click "Save"
+
+#### Create a Map ID (Required for advanced features):
+1. Go to [Map Management](https://console.cloud.google.com/google/maps-apis/studio/maps)
+2. Click "Create Map ID"
+3. Enter a name (e.g., "Travel Planner Map")
+4. Select "JavaScript" as the Map type
+5. Click "Save"
+6. Copy the Map ID (this is for `EXPO_PUBLIC_GOOGLE_MAP_ID`)
 
 ### 6. Create Your .env File
 
@@ -74,6 +100,8 @@ GOOGLE_VERTEX_PROJECT=your-actual-project-id
 GOOGLE_VERTEX_LOCATION=us-central1
 GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json
 GOOGLE_PLACES_API_KEY=your-actual-api-key
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-actual-maps-api-key
+EXPO_PUBLIC_GOOGLE_MAP_ID=your-actual-map-id
 ```
 
 ### 7. Verify Setup

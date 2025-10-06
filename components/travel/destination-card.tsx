@@ -14,6 +14,7 @@ interface DestinationCardProps {
 }
 
 export function DestinationSkeleton() {
+  console.log("[DestinationSkeleton] Rendering");
   return (
     <View style={tw`bg-gray-100 dark:bg-gray-800 rounded-2xl p-6 my-4`}>
       <View style={tw`bg-gray-300 dark:bg-gray-700 h-6 w-3/4 rounded mb-4`} />
@@ -31,6 +32,7 @@ export function DestinationSkeleton() {
 }
 
 export function DestinationCard({ data }: DestinationCardProps) {
+  console.log("[DestinationCard] Rendering with data:", data);
   if (!data) {
     return <DestinationSkeleton />;
   }
@@ -75,23 +77,27 @@ export function DestinationCard({ data }: DestinationCardProps) {
         </View>
       )}
 
-      <View>
-        <Text
-          style={tw`text-sm font-semibold text-gray-900 dark:text-white mb-2`}
-        >
-          ✨ Highlights
-        </Text>
-        <ScrollView style={tw`max-h-48`}>
-          {data.highlights.map((highlight, idx) => (
-            <View key={idx} style={tw`flex-row items-start mb-2`}>
-              <Text style={tw`text-blue-500 mr-2`}>•</Text>
-              <Text style={tw`flex-1 text-sm text-gray-700 dark:text-gray-300`}>
-                {highlight}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
+      {data.highlights.length > 0 && (
+        <View>
+          <Text
+            style={tw`text-sm font-semibold text-gray-900 dark:text-white mb-2`}
+          >
+            ✨ Highlights
+          </Text>
+          <ScrollView style={tw`max-h-48`}>
+            {data.highlights.map((highlight, idx) => (
+              <View key={idx} style={tw`flex-row items-start mb-2`}>
+                <Text style={tw`text-blue-500 mr-2`}>•</Text>
+                <Text
+                  style={tw`flex-1 text-sm text-gray-700 dark:text-gray-300`}
+                >
+                  {highlight}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 }

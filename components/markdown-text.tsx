@@ -9,6 +9,14 @@ export default function MarkdownText({
   done,
   ...props
 }: React.ComponentProps<typeof Markdown> & { done?: boolean }) {
+  const content = props.children?.toString() || "";
+  console.log(
+    "[MarkdownText] Rendering, done:",
+    done,
+    "content length:",
+    content.length
+  );
+
   useEffect(() => {
     if (process.env.EXPO_OS === "ios") {
       if (done) {
@@ -18,6 +26,13 @@ export default function MarkdownText({
       }
     }
   }, [done]);
+
+  // Don't render anything if content is empty
+  if (!content || content.trim().length === 0) {
+    console.log("[MarkdownText] Skipping render - empty content");
+    return null;
+  }
+
   return (
     <>
       <Markdown

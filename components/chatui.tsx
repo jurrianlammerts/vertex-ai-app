@@ -4,8 +4,6 @@ import { useActions, useAIState, useUIState } from "@ai-sdk/rsc";
 import React from "react";
 import { View } from "react-native";
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { Stack } from "expo-router";
 import { AI } from "./ai-context";
 import { ChatToolbarInner } from "./chat-toolbar";
@@ -17,7 +15,6 @@ import * as AC from "@bacons/apple-colors";
 
 import { nanoid } from "@/util/nanoid";
 import { tw } from "@/util/tw";
-import { AnimatedLogo } from "./animated-logo";
 import { ChatContainer } from "./chat-container";
 
 const HEADER_HEIGHT = 0;
@@ -25,9 +22,12 @@ const HEADER_HEIGHT = 0;
 function MessagesScrollView() {
   const [messages] = useUIState<typeof AI>();
 
-  const { top } = useSafeAreaInsets();
-
   const textInputHeight = 8 + 36;
+
+  console.log(
+    "[MessagesScrollView] Rendering with message count:",
+    messages.length
+  );
 
   return (
     <>
@@ -38,20 +38,31 @@ function MessagesScrollView() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: top + HEADER_HEIGHT + 24,
+          paddingTop: HEADER_HEIGHT + 24,
           paddingBottom: textInputHeight,
-          gap: 16,
+          gap: 8,
           flex: messages.length ? undefined : 1,
         }}
       >
         {
           // View messages in UI state
-          messages.map((message) => (
-            <View key={message.id}>{message.display}</View>
-          ))
+          messages.map((message, index) => {
+            console.log(
+              "[MessagesScrollView] Rendering message",
+              index,
+              "id:",
+              message.id,
+              "display type:",
+              typeof message.display,
+              "is React element:",
+              !!message.display &&
+                typeof message.display === "object" &&
+                "$$typeof" in message.display
+            );
+            return <View key={message.id}>{message.display}</View>;
+          })
         }
       </KeyboardFriendlyScrollView>
-      {messages.length === 0 && <AnimatedLogo />}
     </>
   );
 }

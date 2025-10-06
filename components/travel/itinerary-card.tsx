@@ -24,6 +24,7 @@ interface ItineraryCardProps {
 }
 
 export function ItinerarySkeleton() {
+  console.log("[ItinerarySkeleton] Rendering");
   return (
     <View style={tw`bg-gray-100 dark:bg-gray-800 rounded-2xl p-6 my-4`}>
       <View style={tw`bg-gray-300 dark:bg-gray-700 h-6 w-3/4 rounded mb-4`} />
@@ -41,6 +42,7 @@ export function ItinerarySkeleton() {
 }
 
 export function ItineraryCard({ data, title }: ItineraryCardProps) {
+  console.log("[ItineraryCard] Rendering with data:", data);
   if (!data) {
     return <ItinerarySkeleton />;
   }

@@ -47,8 +47,9 @@ You need to configure the following environment variables in your `.env.local` f
 - `GOOGLE_PRIVATE_KEY_ID` — Private key ID (optional)
 
 **Optional APIs:**
-- `GOOGLE_MAPS_API_KEY` — [Google Maps API](https://console.cloud.google.com/google/maps-apis/home) for fetching locations (native only)
-- `EXPO_PUBLIC_APPLE_MAPKIT_JS_KEY` — [Apple MapKit JS](https://developer.apple.com/account/resources/services/maps-tokens) for web maps
+- `GOOGLE_MAPS_API_KEY` — [Google Maps API](https://console.cloud.google.com/google/maps-apis/home) for fetching locations (server-side)
+- `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` — [Google Maps JavaScript API](https://console.cloud.google.com/google/maps-apis/home) for web maps
+- `EXPO_PUBLIC_GOOGLE_MAP_ID` — Google Map ID for advanced map features
 
 ### 3. Install Dependencies
 
