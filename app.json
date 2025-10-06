@@ -2,11 +2,11 @@
   "expo": {
     "name": "Travel Planner AI",
     "slug": "travel-planner-ai",
-    "owner": "bacon",
+    "owner": "jurrianl",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icons/bouquet.png",
-    "scheme": "expoai",
+    "scheme": "travelplannerai",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#000000",
     "newArchEnabled": true,
@@ -16,8 +16,8 @@
       "backgroundColor": "#000000"
     },
     "ios": {
-      "appleTeamId": "QQ57RJ5UTD",
-      "bundleIdentifier": "app.bacon.expoai",
+      "appleTeamId": "",
+      "bundleIdentifier": "app.jurrian.travelplannerai",
       "icon": {
         "light": "./assets/icons/bouquet.png",
         "dark": "./assets/icons/floral.png"
@@ -27,7 +27,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.app.bacon.expoai"]
+        "com.apple.security.application-groups": ["group.app.jurrian.travelplannerai"]
       },
       "associatedDomains": [
         "applinks:exai.expo.app",
@@ -75,7 +75,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "95d2c7db-33a6-4055-8297-0198c13734ca"
+        "projectId": ""
       }
     }
   }

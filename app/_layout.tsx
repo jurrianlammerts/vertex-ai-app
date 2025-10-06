@@ -91,13 +91,6 @@ export default function Layout() {
             ),
           }}
         />
-        <Stack.Screen
-          name="movie"
-          options={{
-            presentation: "modal",
-            headerShown: false,
-          }}
-        />
 
         <Stack.Screen
           name="settings/icon"
